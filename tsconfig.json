@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "jsx": "react-jsx",
+    "composite": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src", "tests", "tsdown.host.config.ts", "tsdown.client.config.ts"]
+}

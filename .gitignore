@@ -1,0 +1,8 @@
+node_modules/
+.typert-build/
+*.tsbuildinfo
+coverage/
+*.tgz
+.DS_Store
+
+# lib/ is intentionally committed for GitHub source installation.
