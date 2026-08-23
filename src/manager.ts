@@ -95,10 +95,16 @@ export class SkillSwitchManager {
     const targets = await this.scanTargets(owned)
     const externalNames = new Set(targets.map(entry => entry.name))
     const scanned = await scanStore(storePath)
-    const skills = scanned.map(skill => this.toEntry(skill, owned.get(skill.name), externalNames.has(skill.name)))
-    const sourceNames = new Set(scanned.map(skill => skill.name))
+    const matchedRecords = new Set<string>()
+    const skills: SkillSwitchEntry[] = []
+    for (const skill of scanned) {
+      const record = owned.get(skill.name)
+      if (record !== undefined && !samePath(record.sourcePath, skill.sourcePath)) continue
+      if (record !== undefined) matchedRecords.add(record.name)
+      skills.push(this.toEntry(skill, record, externalNames.has(skill.name)))
+    }
     for (const record of manifest.links) {
-      if (sourceNames.has(record.name)) continue
+      if (matchedRecords.has(record.name)) continue
       skills.push({
         name: record.name,
         description: '',
@@ -106,10 +112,10 @@ export class SkillSwitchManager {
         targetPath: join(this.targetPath, record.name),
         status: 'broken',
         managed: true,
-        diagnostic: 'The source directory is missing. Disable this Skill to remove its Junction safely.',
+        diagnostic: 'The managed source is missing or no longer declares this Skill. Disable it before enabling another source.',
       })
     }
-    skills.sort((a, b) => a.name.localeCompare(b.name, 'en'))
+    skills.sort((a, b) => a.name.localeCompare(b.name, 'en') || a.sourcePath.localeCompare(b.sourcePath, 'en'))
     return {
       platform: 'supported',
       platformDiagnostic: '',
@@ -124,9 +130,12 @@ export class SkillSwitchManager {
   private async enable(name: string): Promise<void> {
     const storePath = resolveStorePath(this.options.getStorePath() || DEFAULT_STORE_PATH, this.userHome)
     this.assertSeparated(storePath)
-    const skill = (await scanStore(storePath)).find(candidate => candidate.name === name)
-    if (skill === undefined) throw new Error(`Skill not found: ${name}`)
-    if (!skill.valid) throw new Error(skill.diagnostic)
+    const candidates = (await scanStore(storePath)).filter(candidate => candidate.name === name)
+    const skill = candidates.find(candidate => candidate.valid)
+    if (skill === undefined) {
+      if (candidates[0] !== undefined) throw new Error(candidates[0].diagnostic)
+      throw new Error(`Skill not found: ${name}`)
+    }
     const manifest = await this.reconcileManifest(await this.manifest.read())
     if (manifest.links.some(record => record.name === name)) return
     const target = join(this.targetPath, name)

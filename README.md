@@ -9,7 +9,7 @@ The default central directory is `~/.cc-switch/skills`. Version `0.1.0` targets 
 ## Scope
 
 - Manages user-global DSH Skills only.
-- Accepts direct `<name>/SKILL.md` directory bundles.
+- Accepts direct `<directory>/SKILL.md` directory bundles and identifies them by frontmatter name.
 - Creates and removes Windows Junctions only.
 - Never installs, updates, edits, or deletes central Skills.
 - Never adopts existing files, directories, or links in `$DSH_HOME/skills`.
@@ -36,11 +36,11 @@ Open DSH Settings and select **Skills**.
 
 ## Skill format
 
-The central directory is scanned one level deep. Source directory links and linked `SKILL.md` files are ignored. A valid Skill uses a kebab-case directory name and matching YAML frontmatter:
+The central directory is scanned one level deep. Source directory links and linked `SKILL.md` files are ignored. A source directory may use any name; the `SKILL.md` frontmatter `name` is the canonical Skill identity and must be kebab-case:
 
 ```text
 central-directory/
-`-- example-skill/
+`-- example-skill-main/
     `-- SKILL.md
 ```
 
@@ -51,6 +51,8 @@ description: A non-empty description.
 ---
 ```
 
+Enabling this example creates `$DSH_HOME/skills/example-skill`, which points to `central-directory/example-skill-main`. If multiple valid source directories declare the same frontmatter name, every duplicate is reported as invalid until the ambiguity is removed.
+
 The configured central path must be a Windows absolute path or start with `~`. Environment-variable expressions such as `%USERPROFILE%` are not expanded. The central directory and `$DSH_HOME/skills` cannot contain one another.
 
 ## States
@@ -60,8 +62,8 @@ The configured central path must be a Windows absolute path or start with `~`. E
 | `available` | Valid central Skill with no target entry | Can be enabled |
 | `enabled` | Junction is owned and verified by this plugin | Can be disabled |
 | `conflict` | An external target already uses the same name | Read-only |
-| `invalid` | Directory or frontmatter validation failed | Read-only unless already managed |
-| `broken` | The source disappeared while the owned Junction remains | Can be disabled safely |
+| `invalid` | The Skill file/frontmatter is invalid, or multiple sources declare the same name | Read-only unless already managed |
+| `broken` | The managed source disappeared or no longer declares the recorded Skill | Can be disabled safely |
 
 Existing ordinary directories such as `~/.dsh/skills/nai-fadian` remain externally managed. A same-named central Skill is reported as a conflict and its toggle is disabled.
 
@@ -69,7 +71,7 @@ Existing ordinary directories such as `~/.dsh/skills/nai-fadian` remain external
 
 Ownership records are stored in `$DSH_HOME/skill-switch/manifest.json`. The manifest is versioned, strictly validated, and replaced atomically. Every record includes the source and filesystem identity of the Junction created by this plugin.
 
-Before removal, the plugin validates the Skill name, recomputes the target under `$DSH_HOME/skills`, verifies that the target is still a link with the recorded identity, and verifies its destination. A missing target is pruned from the manifest. A replaced target loses ownership and is displayed as external. Source Skills are never removed.
+Before removal, the plugin validates the Skill name, recomputes the target under `$DSH_HOME/skills`, verifies that the target is still a link with the recorded identity, and verifies its destination. A missing target is pruned from the manifest. A replaced target loses ownership and is displayed as external. A managed Skill is matched by both its frontmatter name and recorded source path, so moving a source requires disabling it before the new path can be enabled. Source Skills are never removed.
 
 All scans and mutations share one serial queue. Changing the central directory is refused while any verified managed Junction remains; use **Disable all** first. On non-Windows hosts, the Remote returns `unsupported-platform` and performs no filesystem mutation.
 

@@ -36,21 +36,49 @@ describe('configured paths', () => {
 })
 
 describe('central store scanner', () => {
-  it('parses direct directory bundles and reports invalid entries', async () => {
+  it('uses valid frontmatter names independently of source directory names', async () => {
     const root = await temporary()
-    await mkdir(join(root, 'valid-skill'))
-    await writeFile(join(root, 'valid-skill', 'SKILL.md'), '---\nname: valid-skill\ndescription: Useful locally\n---\nBody\n')
-    await mkdir(join(root, 'Bad_Name'))
-    await writeFile(join(root, 'Bad_Name', 'SKILL.md'), '---\nname: Bad_Name\ndescription: no\n---\n')
-    await mkdir(join(root, 'wrong-name'))
-    await writeFile(join(root, 'wrong-name', 'SKILL.md'), '---\nname: another\ndescription: no\n---\n')
+    await mkdir(join(root, 'Repository-Main'))
+    await writeFile(join(root, 'Repository-Main', 'SKILL.md'), '---\nname: useful-skill\ndescription: Useful locally\n---\nBody\n')
     await writeFile(join(root, 'loose.md'), 'ignored')
 
     const result = await scanStore(root)
-    expect(result.map(skill => [skill.name, skill.valid])).toEqual([
-      ['Bad_Name', false], ['valid-skill', true], ['wrong-name', false],
+    expect(result).toEqual([{
+      name: 'useful-skill', sourcePath: join(root, 'Repository-Main'), description: 'Useful locally',
+      valid: true, diagnostic: '',
+    }])
+  })
+
+  it('reports missing, non-string, and non-kebab frontmatter names', async () => {
+    const root = await temporary()
+    await mkdir(join(root, 'missing-name'))
+    await writeFile(join(root, 'missing-name', 'SKILL.md'), '---\ndescription: no name\n---\n')
+    await mkdir(join(root, 'numeric-name'))
+    await writeFile(join(root, 'numeric-name', 'SKILL.md'), '---\nname: 42\ndescription: numeric\n---\n')
+    await mkdir(join(root, 'invalid-name'))
+    await writeFile(join(root, 'invalid-name', 'SKILL.md'), '---\nname: Bad_Name\ndescription: invalid\n---\n')
+
+    const result = await scanStore(root)
+    expect(result.map(skill => [skill.name, skill.valid, skill.diagnostic])).toEqual([
+      ['Bad_Name', false, 'Frontmatter name must be kebab-case.'],
+      ['missing-name', false, 'Frontmatter name must be a string.'],
+      ['numeric-name', false, 'Frontmatter name must be a string.'],
     ])
-    expect(result[1]?.description).toBe('Useful locally')
+  })
+
+  it('rejects every valid source that declares a duplicate frontmatter name', async () => {
+    const root = await temporary()
+    await mkdir(join(root, 'first-source'))
+    await writeFile(join(root, 'first-source', 'SKILL.md'), '---\nname: shared-skill\ndescription: First\n---\n')
+    await mkdir(join(root, 'second-source'))
+    await writeFile(join(root, 'second-source', 'SKILL.md'), '---\nname: shared-skill\ndescription: Second\n---\n')
+
+    const result = await scanStore(root)
+    expect(result.map(skill => [skill.name, skill.sourcePath, skill.valid])).toEqual([
+      ['shared-skill', join(root, 'first-source'), false],
+      ['shared-skill', join(root, 'second-source'), false],
+    ])
+    expect(result.every(skill => skill.diagnostic.includes('Duplicate frontmatter name "shared-skill"'))).toBe(true)
   })
 
   it('does not follow linked source directories or linked SKILL.md files', async () => {

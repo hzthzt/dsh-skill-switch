@@ -127,22 +127,22 @@ export function SkillSwitchSection(props: SkillSwitchSectionProps): ReactNode {
           {ready.skills.length > 0 && visible.length === 0 ? <p className="dss-status">{t('emptySearch')}</p> : null}
           {visible.length > 0 ? (
             <ul className="dss-list">
-              {visible.map(skill => {
-                const open = expanded === skill.name
-                const detailId = `${detailsPrefix}-${skill.name}`
+              {visible.map((skill, index) => {
+                const open = expanded === skill.sourcePath
+                const detailId = `${detailsPrefix}-skill-${index}`
                 const canToggle = !unsupported && (skill.managed || (skill.status !== 'invalid' && skill.status !== 'conflict'))
-                return <li className="dss-row" key={skill.name} data-status={skill.status}>
+                return <li className="dss-row" key={skill.sourcePath} data-status={skill.status}>
                   <div className="dss-row-main">
                     <div className="dss-copy"><div className="dss-name-line"><span className="dss-name">{skill.name}</span>
                       <span className="dss-badge" data-status={skill.status}>{t(skill.status)}</span></div>
                       <p className="dss-description">{skill.description || skill.diagnostic}</p></div>
                     <Tooltip label={t('details')} side="bottom"><button className="dss-disclosure" type="button" aria-label={`${t('details')}: ${skill.name}`}
-                      aria-expanded={open} aria-controls={detailId} onClick={() => { setExpanded(value => value === skill.name ? null : skill.name) }}>
+                      aria-expanded={open} aria-controls={detailId} onClick={() => { setExpanded(value => value === skill.sourcePath ? null : skill.sourcePath) }}>
                       <IconChevronDownOutline14 /></button></Tooltip>
                     <label className="dss-toggle" title={t(skill.managed ? 'enabled' : 'available')}>
                       <input type="checkbox" checked={skill.managed} disabled={!canToggle || pending !== null}
                         aria-label={`${skill.name}: ${t(skill.managed ? 'enabled' : 'available')}`}
-                        onChange={event => { const enabled = event.currentTarget.checked; void run(skill.name, () => setEnabled(skill.name, enabled)) }} />
+                        onChange={event => { const enabled = event.currentTarget.checked; void run(skill.sourcePath, () => setEnabled(skill.name, enabled)) }} />
                       <span className="dss-toggle-track" aria-hidden="true" />
                     </label>
                   </div>

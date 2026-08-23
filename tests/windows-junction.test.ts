@@ -1,4 +1,4 @@
-import { lstat, mkdir, readFile, readlink, rm, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, readFile, readlink, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { mkdtemp } from 'node:fs/promises'
@@ -26,25 +26,25 @@ async function setup(): Promise<{ root: string; store: string; dsh: string; mana
   return { root, store, dsh, manager, setting }
 }
 
-async function skill(store: string, name: string): Promise<void> {
-  await mkdir(join(store, name))
-  await writeFile(join(store, name, 'SKILL.md'), `---\nname: ${name}\ndescription: ${name} description\n---\nBody\n`)
+async function skill(store: string, directoryName: string, name = directoryName): Promise<void> {
+  await mkdir(join(store, directoryName))
+  await writeFile(join(store, directoryName, 'SKILL.md'), `---\nname: ${name}\ndescription: ${name} description\n---\nBody\n`)
 }
 
 describeWindows('real Junction lifecycle', () => {
   it('enables and disables without changing the source bundle', async () => {
     const { store, manager } = await setup()
-    await skill(store, 'alpha-skill')
-    const sourceBefore = await readFile(join(store, 'alpha-skill', 'SKILL.md'), 'utf8')
+    await skill(store, 'alpha-skill-main', 'alpha-skill')
+    const sourceBefore = await readFile(join(store, 'alpha-skill-main', 'SKILL.md'), 'utf8')
     const enabled = await manager.setEnabled('alpha-skill', true)
     const target = join(manager.targetPath, 'alpha-skill')
     expect(enabled.skills[0]?.status).toBe('enabled')
     expect((await lstat(target)).isSymbolicLink()).toBe(true)
-    expect((await readlink(target)).toLocaleLowerCase()).toContain('alpha-skill')
+    expect((await readlink(target)).toLocaleLowerCase()).toContain('alpha-skill-main')
     const disabled = await manager.setEnabled('alpha-skill', false)
     expect(disabled.skills[0]?.status).toBe('available')
     await expect(lstat(target)).rejects.toMatchObject({ code: 'ENOENT' })
-    expect(await readFile(join(store, 'alpha-skill', 'SKILL.md'), 'utf8')).toBe(sourceBefore)
+    expect(await readFile(join(store, 'alpha-skill-main', 'SKILL.md'), 'utf8')).toBe(sourceBefore)
   })
 
   it('reports conflicts and never adopts an ordinary target directory', async () => {
@@ -66,6 +66,26 @@ describeWindows('real Junction lifecycle', () => {
     expect(snapshot.skills[0]).toMatchObject({ name: 'broken-skill', status: 'broken', managed: true })
     const disabled = await manager.setEnabled('broken-skill', false)
     expect(disabled.managedEnabledCount).toBe(0)
+  })
+
+  it('requires disable before adopting the same Skill name from a new source path', async () => {
+    const { store, manager } = await setup()
+    await skill(store, 'moving-source-a', 'moving-skill')
+    await manager.setEnabled('moving-skill', true)
+    await rename(join(store, 'moving-source-a'), join(store, 'moving-source-b'))
+
+    const moved = await manager.snapshot()
+    expect(moved.skills).toHaveLength(1)
+    expect(moved.skills[0]).toMatchObject({
+      name: 'moving-skill', sourcePath: join(store, 'moving-source-a'), status: 'broken', managed: true,
+    })
+
+    const disabled = await manager.setEnabled('moving-skill', false)
+    expect(disabled.skills[0]).toMatchObject({
+      name: 'moving-skill', sourcePath: join(store, 'moving-source-b'), status: 'available', managed: false,
+    })
+    await manager.setEnabled('moving-skill', true)
+    expect((await readlink(join(manager.targetPath, 'moving-skill'))).toLocaleLowerCase()).toContain('moving-source-b')
   })
 
   it('abandons ownership when a target is externally replaced', async () => {

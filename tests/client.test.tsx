@@ -75,6 +75,26 @@ describe('Skills settings section', () => {
     await waitFor(() => { expect(setEnabled).toHaveBeenCalledWith('alpha-skill', true) })
   })
 
+  it('expands duplicate-name diagnostics independently by source path', async () => {
+    const duplicateSnapshot: SkillSwitchSnapshot = {
+      ...snapshot,
+      managedEnabledCount: 0,
+      skills: [
+        { name: 'shared-skill', description: '', sourcePath: 'C:\\central\\first-source', targetPath: 'C:\\dsh\\skills\\shared-skill', status: 'invalid', managed: false, diagnostic: 'Duplicate name' },
+        { name: 'shared-skill', description: '', sourcePath: 'C:\\central\\second-source', targetPath: 'C:\\dsh\\skills\\shared-skill', status: 'invalid', managed: false, diagnostic: 'Duplicate name' },
+      ],
+    }
+    renderSection({ snapshot: vi.fn(async () => duplicateSnapshot) })
+    const details = await screen.findAllByLabelText('details: shared-skill')
+
+    fireEvent.click(details[0]!)
+    expect(screen.getByText('C:\\central\\first-source')).toBeTruthy()
+    expect(screen.queryByText('C:\\central\\second-source')).toBeNull()
+    fireEvent.click(details[1]!)
+    expect(screen.queryByText('C:\\central\\first-source')).toBeNull()
+    expect(screen.getByText('C:\\central\\second-source')).toBeTruthy()
+  })
+
   it('saves a path and confirms disable all', async () => {
     const setStorePath = vi.fn(async path => ({ ...snapshot, storePath: path }))
     const disableAll = vi.fn(async () => ({ ...snapshot, managedEnabledCount: 0 }))
