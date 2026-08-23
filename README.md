@@ -1,5 +1,7 @@
 # dsh-skill-switch
 
+English | [简体中文](README.zh.md)
+
 Windows-only Skill management for DeepSeek Harness Web. The plugin scans one central directory and selectively exposes user-global Skills in `$DSH_HOME/skills` through directory Junctions.
 
 The default central directory is `~/.cc-switch/skills`. Version `0.1.0` targets DSH `dsh-v0.1.1-rc.2` at commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`.
