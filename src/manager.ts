@@ -8,7 +8,7 @@ import type { ExternalSkillEntry, SkillSwitchEntry, SkillSwitchSnapshot } from '
 
 export interface SkillSwitchManagerOptions {
   readonly dshHome: string
-  readonly getStorePath: () => string
+  readonly getStorePath: () => Promise<string>
   readonly setStorePath: (path: string) => Promise<void>
   readonly platform?: NodeJS.Platform
   readonly userHome?: string
@@ -77,7 +77,7 @@ export class SkillSwitchManager {
   }
 
   private async scan(): Promise<SkillSwitchSnapshot> {
-    const storePath = resolveStorePath(this.options.getStorePath() || DEFAULT_STORE_PATH, this.userHome)
+    const storePath = resolveStorePath(await this.options.getStorePath() || DEFAULT_STORE_PATH, this.userHome)
     if (this.platform !== 'win32') {
       return {
         platform: 'unsupported-platform',
@@ -128,7 +128,7 @@ export class SkillSwitchManager {
   }
 
   private async enable(name: string): Promise<void> {
-    const storePath = resolveStorePath(this.options.getStorePath() || DEFAULT_STORE_PATH, this.userHome)
+    const storePath = resolveStorePath(await this.options.getStorePath() || DEFAULT_STORE_PATH, this.userHome)
     this.assertSeparated(storePath)
     const candidates = (await scanStore(storePath)).filter(candidate => candidate.name === name)
     const skill = candidates.find(candidate => candidate.valid)

@@ -4,7 +4,7 @@ English | [简体中文](README.zh.md)
 
 Windows-only Skill management for DeepSeek Harness Web. The plugin scans one central directory and selectively exposes user-global Skills in `$DSH_HOME/skills` through directory Junctions.
 
-The default central directory is `~/.cc-switch/skills`. Version `0.1.0` targets DSH `dsh-v0.1.1-rc.2` at commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`.
+The default central directory is `~/.cc-switch/skills`. Version `0.2.0` targets DSH `0.2.0-rc.2`.
 
 ## Scope
 
@@ -29,8 +29,10 @@ The repository commits `lib/`, so Git installation does not need to run a build 
 
 ```sh
 pnpm pack
-dsh plugin --profile <profile> add ./dsh-skill-switch-0.1.0.tgz
+dsh plugin --profile <profile> add ./dsh-skill-switch-0.2.0.tgz
 ```
+
+The plugin pins its DSH peers to the exact baseline version. If the running harness does not match, DSH skips the bundle (the Skills section simply does not appear); either re-baseline this repository or accept the mismatch explicitly with `dsh plugin --profile <profile> allow-version dsh-skill-switch@0.2.0 --dsh-version <running> --accept-risk`.
 
 Open DSH Settings and select **Skills**.
 
@@ -69,7 +71,7 @@ Existing ordinary directories such as `~/.dsh/skills/nai-fadian` remain external
 
 ## Safety model
 
-Ownership records are stored in `$DSH_HOME/skill-switch/manifest.json`. The manifest is versioned, strictly validated, and replaced atomically. Every record includes the source and filesystem identity of the Junction created by this plugin.
+Ownership records are stored in `$DSH_HOME/skill-switch/manifest.json`, and the configured central directory in `$DSH_HOME/skill-switch/config.json`. Both documents are versioned, strictly validated, and replaced atomically. Every manifest record includes the source and filesystem identity of the Junction created by this plugin.
 
 Before removal, the plugin validates the Skill name, recomputes the target under `$DSH_HOME/skills`, verifies that the target is still a link with the recorded identity, and verifies its destination. A missing target is pruned from the manifest. A replaced target loses ownership and is displayed as external. A managed Skill is matched by both its frontmatter name and recorded source path, so moving a source requires disabling it before the new path can be enabled. Source Skills are never removed.
 

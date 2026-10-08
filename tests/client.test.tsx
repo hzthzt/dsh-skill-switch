@@ -16,9 +16,9 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
     Modal: ({ open, title, children, footer }: Record<string, unknown>) => open
       ? React.createElement('div', { role: 'dialog' }, title as ReactNode, children as ReactNode, footer as ReactNode)
       : null,
-    IconChevronDownOutline14: icon,
-    IconRefreshOutline16: icon,
-    IconSearchOutline16: icon,
+    IconChevronDownOutlineRegular: icon,
+    IconRefreshOutlineRegular: icon,
+    IconSearchOutlineRegular: icon,
   }
 })
 

@@ -1,8 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
-import { settingsNamespace, type SettingsScope } from '@deepseek-ai/dsh-settings'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import { ConfigStore, resolveConfigPath } from './config.ts'
 import { SkillSwitchManager } from './manager.ts'
 import { DEFAULT_STORE_PATH } from './paths.ts'
 import type { SkillSwitchSnapshot } from './types.ts'
@@ -10,34 +9,24 @@ import type { SkillSwitchSnapshot } from './types.ts'
 export const name = 'dsh-skill-switch'
 
 export type * from './types.ts'
+export { ConfigStore, resolveConfigPath, validateConfig } from './config.ts'
 export { ManifestStore, validateManifest } from './manifest.ts'
 export { SkillSwitchManager } from './manager.ts'
 export { DEFAULT_STORE_PATH, pathsOverlap, resolveStorePath } from './paths.ts'
 export { scanStore } from './scanner.ts'
 
-export const SETTINGS_NAMESPACE = settingsNamespace('skill-switch')
-
-interface SkillSwitchSettings {
-  readonly storePath: string
-}
-
-const SettingsSchema = z.object({
-  storePath: z.string().default(DEFAULT_STORE_PATH),
-})
-
 /** Host Remote service and sole owner of Skill Junction mutations. */
 export class SkillSwitchService extends TypertRemoteService {
-  static inject = ['settings']
-  private readonly settings: SettingsScope<SkillSwitchSettings>
+  private readonly config: ConfigStore
   private readonly manager: SkillSwitchManager
 
   constructor(ctx: Context) {
     super(ctx, 'skillSwitch')
-    this.settings = ctx.settings.register(SETTINGS_NAMESPACE, SettingsSchema)
+    this.config = new ConfigStore(resolveConfigPath(dshHomePath()))
     this.manager = new SkillSwitchManager({
       dshHome: dshHomePath(),
-      getStorePath: () => this.settings.get().storePath,
-      setStorePath: async storePath => this.settings.update({ storePath }),
+      getStorePath: async () => (await this.config.read()).storePath,
+      setStorePath: async storePath => { await this.config.write({ version: 1, storePath }) },
     })
   }
 

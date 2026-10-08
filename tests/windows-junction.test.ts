@@ -20,7 +20,7 @@ async function setup(): Promise<{ root: string; store: string; dsh: string; mana
   const setting = { value: store }
   const manager = new SkillSwitchManager({
     dshHome: dsh, platform: 'win32', userHome: root,
-    getStorePath: () => setting.value,
+    getStorePath: async () => setting.value,
     setStorePath: async value => { setting.value = value },
   })
   return { root, store, dsh, manager, setting }

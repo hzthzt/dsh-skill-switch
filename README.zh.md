@@ -4,7 +4,7 @@
 
 仅适用于 Windows 的 DeepSeek Harness Web Skill 管理插件。插件扫描一个中央目录，并通过目录 Junction（目录联接）将选中的用户全局 Skill 暴露到 `$DSH_HOME/skills`。
 
-默认中央目录为 `~/.cc-switch/skills`。版本 `0.1.0` 面向 DSH `dsh-v0.1.1-rc.2`，对应提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。
+默认中央目录为 `~/.cc-switch/skills`。版本 `0.2.0` 面向 DSH `0.2.0-rc.2`。
 
 ## 功能范围
 
@@ -29,8 +29,10 @@ dsh --profile <profile> web
 
 ```sh
 pnpm pack
-dsh plugin --profile <profile> add ./dsh-skill-switch-0.1.0.tgz
+dsh plugin --profile <profile> add ./dsh-skill-switch-0.2.0.tgz
 ```
+
+插件将其 DSH peer 依赖精确锁定到基线版本。若当前运行的 harness 版本不匹配，DSH 会跳过该 bundle（Skills 页不会出现）；此时可以重新对齐基线，或用 `dsh plugin --profile <profile> allow-version dsh-skill-switch@0.2.0 --dsh-version <运行版本> --accept-risk` 显式接受该版本差异。
 
 打开 DSH 设置，然后选择 **Skills**。
 
@@ -69,7 +71,7 @@ description: 一段非空的描述。
 
 ## 安全模型
 
-所有权记录保存在 `$DSH_HOME/skill-switch/manifest.json`。该 manifest 带有版本号、经过严格校验，并以原子替换方式写入。每条记录都包含本插件所创建 Junction 的源路径和文件系统标识。
+所有权记录保存在 `$DSH_HOME/skill-switch/manifest.json`，配置的中央目录保存在 `$DSH_HOME/skill-switch/config.json`。这两份文档都带有版本号、经过严格校验，并以原子替换方式写入。每条 manifest 记录都包含本插件所创建 Junction 的源路径和文件系统标识。
 
 移除前，插件会校验 Skill 名称，重新计算 `$DSH_HOME/skills` 下的目标路径，确认目标仍是具有记录标识的链接，并核对其指向。目标缺失时，对应记录会从 manifest 中清除；目标被替换后，插件会放弃其所有权并将其显示为外部管理。受管 Skill 会同时按 frontmatter 名称和记录的源路径匹配，因此移动源目录后，必须先停用旧来源，才能启用新路径。插件绝不会删除源 Skill。
 

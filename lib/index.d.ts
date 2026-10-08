@@ -2,6 +2,29 @@ import { ExternalSkillEntry, SkillStatus, SkillSwitchEntry, SkillSwitchSnapshot 
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { Context } from "@deepseek-ai/cordis";
 
+//#region src/config.d.ts
+interface SkillSwitchConfig {
+  readonly version: 1;
+  readonly storePath: string;
+}
+/** Resolve the plugin-owned configuration document under the DSH home. */
+declare function resolveConfigPath(dshHome: string): string;
+/**
+ * Strict, versioned, atomically replaced configuration owned by this plugin.
+ *
+ * DSH 0.2.0-rc.2 replaced per-namespace settings registration with a
+ * profile-entry-id form projection, so this plugin owns its own document
+ * instead of depending on that seam. The file lives beside the ownership
+ * manifest under `$DSH_HOME/skill-switch/`.
+ */
+declare class ConfigStore {
+  readonly path: string;
+  constructor(path: string);
+  read(): Promise<SkillSwitchConfig>;
+  write(config: SkillSwitchConfig): Promise<void>;
+}
+declare function validateConfig(value: unknown): SkillSwitchConfig;
+//#endregion
 //#region src/manifest.d.ts
 interface LinkIdentity {
   readonly dev: string;
@@ -28,7 +51,7 @@ declare function validateManifest(value: unknown): SkillSwitchManifest;
 //#region src/manager.d.ts
 interface SkillSwitchManagerOptions {
   readonly dshHome: string;
-  readonly getStorePath: () => string;
+  readonly getStorePath: () => Promise<string>;
   readonly setStorePath: (path: string) => Promise<void>;
   readonly platform?: NodeJS.Platform;
   readonly userHome?: string;
@@ -80,11 +103,9 @@ declare function scanStore(storePath: string): Promise<ScannedSkill[]>;
 //#endregion
 //#region src/index.d.ts
 declare const name = "dsh-skill-switch";
-declare const SETTINGS_NAMESPACE: import("@deepseek-ai/dsh-settings").SettingsNamespace;
 /** Host Remote service and sole owner of Skill Junction mutations. */
 declare class SkillSwitchService extends TypertRemoteService {
-  static inject: string[];
-  private readonly settings;
+  private readonly config;
   private readonly manager;
   constructor(ctx: Context);
   /** Return a fresh filesystem snapshot. */
@@ -97,4 +118,4 @@ declare class SkillSwitchService extends TypertRemoteService {
   setStorePath(path: string): Promise<SkillSwitchSnapshot>;
 }
 //#endregion
-export { DEFAULT_STORE_PATH, type ExternalSkillEntry, ManifestStore, SETTINGS_NAMESPACE, type SkillStatus, type SkillSwitchEntry, SkillSwitchManager, SkillSwitchService, SkillSwitchService as default, type SkillSwitchSnapshot, name, pathsOverlap, resolveStorePath, scanStore, validateManifest };
+export { ConfigStore, DEFAULT_STORE_PATH, type ExternalSkillEntry, ManifestStore, type SkillStatus, type SkillSwitchEntry, SkillSwitchManager, SkillSwitchService, SkillSwitchService as default, type SkillSwitchSnapshot, name, pathsOverlap, resolveConfigPath, resolveStorePath, scanStore, validateConfig, validateManifest };

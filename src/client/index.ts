@@ -1,6 +1,7 @@
 import type {} from '@deepseek-ai/dsh-api-gateway/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import remoteContribution from '../../lib/typert.remote-client.js'
 import { SkillSwitchSection, type SkillSwitchInjected } from './SkillSwitchSection.tsx'
@@ -20,7 +21,7 @@ export const NS = 'settings.skillSwitch'
 export const inject = ['slots', 'locale', 'remote']
 
 /** Mount this package's Remote contribution and independent Settings page. */
-export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
+export async function apply(ctx: Context): Promise<() => Promise<void>> {
   const disposeRemote = await ctx.remote.$mount(remoteContribution)
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-skill-switch: dictionaries')
   ctx.effect(() => {

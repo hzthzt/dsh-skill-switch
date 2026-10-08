@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
 import {
-  Button, IconChevronDownOutline14, IconRefreshOutline16, IconSearchOutline16,
+  Button, IconChevronDownOutlineRegular, IconRefreshOutlineRegular, IconSearchOutlineRegular,
   Input, Modal, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -87,7 +87,7 @@ export function SkillSwitchSection(props: SkillSwitchSectionProps): ReactNode {
           <Tooltip label={t('refresh')} side="bottom">
             <button className="dss-icon-button" type="button" aria-label={t('refresh')} disabled={pending !== null}
               onClick={() => { setRequest(value => value + 1) }}>
-              <IconRefreshOutline16 className={state.status === 'loading' ? 'dss-spin' : undefined} />
+              <IconRefreshOutlineRegular className={state.status === 'loading' ? 'dss-spin' : undefined} />
             </button>
           </Tooltip>
         </div>
@@ -113,7 +113,7 @@ export function SkillSwitchSection(props: SkillSwitchSectionProps): ReactNode {
             </div>
           </div>
           <div className="dss-toolbar">
-            <Input className="dss-search" type="search" icon={<IconSearchOutline16 />} value={query}
+            <Input className="dss-search" type="search" icon={<IconSearchOutlineRegular />} value={query}
               placeholder={t('search')} aria-label={t('search')} onChange={event => { setQuery(event.currentTarget.value) }} />
             <select className="dss-filter" value={filter} aria-label={t('filter')}
               onChange={event => { setFilter(event.currentTarget.value as SkillStatus | 'all') }}>
@@ -138,7 +138,7 @@ export function SkillSwitchSection(props: SkillSwitchSectionProps): ReactNode {
                       <p className="dss-description">{skill.description || skill.diagnostic}</p></div>
                     <Tooltip label={t('details')} side="bottom"><button className="dss-disclosure" type="button" aria-label={`${t('details')}: ${skill.name}`}
                       aria-expanded={open} aria-controls={detailId} onClick={() => { setExpanded(value => value === skill.sourcePath ? null : skill.sourcePath) }}>
-                      <IconChevronDownOutline14 /></button></Tooltip>
+                      <IconChevronDownOutlineRegular /></button></Tooltip>
                     <label className="dss-toggle" title={t(skill.managed ? 'enabled' : 'available')}>
                       <input type="checkbox" checked={skill.managed} disabled={!canToggle || pending !== null}
                         aria-label={`${skill.name}: ${t(skill.managed ? 'enabled' : 'available')}`}

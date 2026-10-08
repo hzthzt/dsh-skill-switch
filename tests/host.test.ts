@@ -5,6 +5,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { afterEach, describe, expect, it } from 'vitest'
 import { rm } from 'node:fs/promises'
 import { ManifestStore, validateManifest } from '../src/manifest.ts'
+import { ConfigStore, resolveConfigPath, validateConfig } from '../src/config.ts'
 import { pathsOverlap, resolveStorePath } from '../src/paths.ts'
 import { scanStore } from '../src/scanner.ts'
 import { SkillSwitchManager } from '../src/manager.ts'
@@ -109,12 +110,35 @@ describe('manifest store', () => {
   })
 })
 
+describe('configuration store', () => {
+  it('defaults to the documented central directory when absent', async () => {
+    const root = await temporary()
+    const store = new ConfigStore(resolveConfigPath(join(root, 'dsh')))
+    expect(await store.read()).toEqual({ version: 1, storePath: '~/.cc-switch/skills' })
+  })
+
+  it('validates, persists, and replaces its document atomically', async () => {
+    const root = await temporary()
+    const store = new ConfigStore(join(root, 'state', 'config.json'))
+    await store.write({ version: 1, storePath: 'D:\\central\\skills' })
+    expect(await store.read()).toEqual({ version: 1, storePath: 'D:\\central\\skills' })
+    expect(JSON.parse(await readFile(store.path, 'utf8'))).toEqual({ version: 1, storePath: 'D:\\central\\skills' })
+    expect(() => validateConfig({ version: 1, storePath: '  ' })).toThrow(/storePath/)
+    expect(() => validateConfig({ version: 2, storePath: 'D:\\x' })).toThrow(/Invalid/)
+    expect(() => validateConfig({ version: 1, storePath: 'D:\\x', extra: 1 })).toThrow(/fields/)
+  })
+
+  it('lives under the plugin-owned skill-switch directory', () => {
+    expect(resolveConfigPath('C:\\Users\\test\\.dsh')).toBe('C:\\Users\\test\\.dsh\\skill-switch\\config.json')
+  })
+})
+
 describe('unsupported platform', () => {
   it('returns an explicit status without creating target or manifest paths', async () => {
     const root = await temporary()
     const manager = new SkillSwitchManager({
       dshHome: join(root, 'dsh'), userHome: root, platform: 'linux',
-      getStorePath: () => '~/store', setStorePath: async () => undefined,
+      getStorePath: async () => '~/store', setStorePath: async () => undefined,
     })
     const snapshot = await manager.snapshot()
     expect(snapshot.platform).toBe('unsupported-platform')
